@@ -1,4 +1,22 @@
 Submodule src/base contains modified content
+diff --git a/src/base/tools/aapt2/compile/IdAssigner.cpp b/src/base/tools/aapt2/compile/IdAssigner.cpp
+index 339b8af..29a1623 100644
+--- a/src/base/tools/aapt2/compile/IdAssigner.cpp
++++ b/src/base/tools/aapt2/compile/IdAssigner.cpp
+@@ -269,10 +269,10 @@ Result<ResourceId> TypeGroup::NextId() {
+ bool IdAssignerContext::ReserveId(const ResourceName& name, ResourceId id,
+                                   const Visibility& visibility, IDiagnostics* diag) {
+   if (package_id_ != id.package_id()) {
+-    diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name
++    std::stringstream error;
++    error << "can't assign ID " << id << " to resource " << name
+                               << " because package already has ID " << std::hex
+-                              << (int)id.package_id());
+-    return false;
++                              << (int)id.package_id() << ". base : " << (int)package_id_ << ". But Ignored.";
+   }
+
+   auto key = ResourceTypeKey{name.type, id.type_id()};
 diff --git a/src/base/tools/aapt2/ResourceTable.cpp b/src/base/tools/aapt2/ResourceTable.cpp
 index 8ab1493c6ab3..3a855f0f6866 100644
 --- a/src/base/tools/aapt2/ResourceTable.cpp
