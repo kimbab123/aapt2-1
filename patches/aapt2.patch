@@ -38,10 +38,10 @@ index 22f4d18dc3ca..67166b159321 100644
  }
 
 diff --git a/src/base/tools/aapt2/compile/IdAssigner.cpp b/src/base/tools/aapt2/compile/IdAssigner.cpp
-index 339b8af5d536..6bd7ae6a19e3 100644
+index 339b8af5d536..e8584ee6172b 100644
 --- a/src/base/tools/aapt2/compile/IdAssigner.cpp
 +++ b/src/base/tools/aapt2/compile/IdAssigner.cpp
-@@ -268,13 +268,6 @@ Result<ResourceId> TypeGroup::NextId() {
+@@ -268,38 +268,14 @@ Result<ResourceId> TypeGroup::NextId() {
  
  bool IdAssignerContext::ReserveId(const ResourceName& name, ResourceId id,
                                    const Visibility& visibility, IDiagnostics* diag) {
@@ -55,7 +55,14 @@ index 339b8af5d536..6bd7ae6a19e3 100644
    auto key = ResourceTypeKey{name.type, id.type_id()};
    auto type = types_.find(key);
    if (type == types_.end()) {
-@@ -289,17 +282,6 @@ bool IdAssignerContext::ReserveId(const ResourceName& name, ResourceId id,
+     // The type has not been assigned an id yet. Ensure that the specified id is not being used by
+     // another type.
+-    auto assign_result = type_id_finder_.ReserveId(key, id.type_id());
+-    if (!assign_result.has_value()) {
+-      diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name
+-                                << " because type " << assign_result.error());
+-      return false;
+-    }
      type = types_.emplace(key, TypeGroup(package_id_, id.type_id())).first;
    }
  
