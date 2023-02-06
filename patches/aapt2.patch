@@ -38,10 +38,42 @@ index 22f4d18dc3ca..67166b159321 100644
  }
 
 diff --git a/src/base/tools/aapt2/compile/IdAssigner.cpp b/src/base/tools/aapt2/compile/IdAssigner.cpp
-index 339b8af5d536..e8584ee6172b 100644
+index 339b8af5d536..aded8b9c98cb 100644
 --- a/src/base/tools/aapt2/compile/IdAssigner.cpp
 +++ b/src/base/tools/aapt2/compile/IdAssigner.cpp
-@@ -268,38 +268,14 @@ Result<ResourceId> TypeGroup::NextId() {
+@@ -195,11 +195,6 @@ template <typename Id, typename Key>
+ Result<Id> NextIdFinder<Id, Key>::ReserveId(Key key, Id id) {
+   CHECK(!next_id_called_) << "ReserveId cannot be called after NextId";
+   auto assign_result = pre_assigned_ids_.emplace(id, key);
+-  if (!assign_result.second && assign_result.first->second != key) {
+-    std::stringstream error;
+-    error << "ID is already assigned to " << assign_result.first->second;
+-    return unexpected(error.str());
+-  }
+   return id;
+ }
+ 
+@@ -239,19 +234,7 @@ std::optional<Id> NextIdFinder<Id, Key>::SkipToNextAvailableId() {
+ }
+ 
+ Result<std::monostate> TypeGroup::ReserveId(const ResourceName& name, ResourceId id) {
+-  if (type_id_ != id.type_id()) {
+-    // Currently there cannot be multiple type ids for a single type.
+-    std::stringstream error;
+-    error << "type '" << name.type << "' already has ID " << std::hex << (int)type_id_;
+-    return unexpected(error.str());
+-  }
+-
+   auto assign_result = next_entry_id_.ReserveId(name, id.entry_id());
+-  if (!assign_result.has_value()) {
+-    std::stringstream error;
+-    error << "entry " << assign_result.error();
+-    return unexpected(error.str());
+-  }
+   return {};
+ }
+ 
+@@ -268,44 +251,21 @@ Result<ResourceId> TypeGroup::NextId() {
  
  bool IdAssignerContext::ReserveId(const ResourceName& name, ResourceId id,
                                    const Visibility& visibility, IDiagnostics* diag) {
@@ -57,7 +89,7 @@ index 339b8af5d536..e8584ee6172b 100644
    if (type == types_.end()) {
      // The type has not been assigned an id yet. Ensure that the specified id is not being used by
      // another type.
--    auto assign_result = type_id_finder_.ReserveId(key, id.type_id());
+     auto assign_result = type_id_finder_.ReserveId(key, id.type_id());
 -    if (!assign_result.has_value()) {
 -      diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name
 -                                << " because type " << assign_result.error());
@@ -66,20 +98,26 @@ index 339b8af5d536..e8584ee6172b 100644
      type = types_.emplace(key, TypeGroup(package_id_, id.type_id())).first;
    }
  
--  if (!visibility.staged_api) {
--    // Ensure that non-staged resources can only exist in one type ID.
--    auto non_staged_type = non_staged_type_ids_.emplace(name.type, id.type_id());
+   if (!visibility.staged_api) {
+     // Ensure that non-staged resources can only exist in one type ID.
+     auto non_staged_type = non_staged_type_ids_.emplace(name.type, id.type_id());
 -    if (!non_staged_type.second && non_staged_type.first->second != id.type_id()) {
 -      diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name
 -                                << " because type already has ID " << std::hex
 -                                << (int)id.type_id());
 -      return false;
 -    }
--  }
--
+   }
+ 
    auto assign_result = type->second.ReserveId(name, id);
-   if (!assign_result.has_value()) {
-     diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name << " because "
+-  if (!assign_result.has_value()) {
+-    diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name << " because "
+-                              << assign_result.error());
+-    return false;
+-  }
+ 
+   return true;
+ }
 
 diff --git a/src/base/tools/aapt2/ResourceTable.cpp b/src/base/tools/aapt2/ResourceTable.cpp
 index 8ab1493c6ab3..3a855f0f6866 100644
