@@ -1,4 +1,41 @@
 Submodule src/base contains modified content
+diff --git a/src/base/tools/aapt2/compile/IdAssigner.cpp b/src/base/tools/aapt2/compile/IdAssigner.cpp
+index 339b8af5d536..6bd7ae6a19e3 100644
+--- a/src/base/tools/aapt2/compile/IdAssigner.cpp
++++ b/src/base/tools/aapt2/compile/IdAssigner.cpp
+@@ -268,13 +268,6 @@ Result<ResourceId> TypeGroup::NextId() {
+ 
+ bool IdAssignerContext::ReserveId(const ResourceName& name, ResourceId id,
+                                   const Visibility& visibility, IDiagnostics* diag) {
+-  if (package_id_ != id.package_id()) {
+-    diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name
+-                              << " because package already has ID " << std::hex
+-                              << (int)id.package_id());
+-    return false;
+-  }
+-
+   auto key = ResourceTypeKey{name.type, id.type_id()};
+   auto type = types_.find(key);
+   if (type == types_.end()) {
+@@ -289,17 +282,6 @@ bool IdAssignerContext::ReserveId(const ResourceName& name, ResourceId id,
+     type = types_.emplace(key, TypeGroup(package_id_, id.type_id())).first;
+   }
+ 
+-  if (!visibility.staged_api) {
+-    // Ensure that non-staged resources can only exist in one type ID.
+-    auto non_staged_type = non_staged_type_ids_.emplace(name.type, id.type_id());
+-    if (!non_staged_type.second && non_staged_type.first->second != id.type_id()) {
+-      diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name
+-                                << " because type already has ID " << std::hex
+-                                << (int)id.type_id());
+-      return false;
+-    }
+-  }
+-
+   auto assign_result = type->second.ReserveId(name, id);
+   if (!assign_result.has_value()) {
+     diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name << " because "
+
 diff --git a/src/base/tools/aapt2/ResourceTable.cpp b/src/base/tools/aapt2/ResourceTable.cpp
 index 8ab1493c6ab3..3a855f0f6866 100644
 --- a/src/base/tools/aapt2/ResourceTable.cpp
@@ -148,24 +185,6 @@ index 675b02a7e161..fb2b11da5ee4 100644
      priv_attr_type->entries = std::move(private_attr_entries);
    }
    return true;
-diff --git a/src/base/tools/aapt2/compile/IdAssigner.cpp b/src/base/tools/aapt2/compile/IdAssigner.cpp
-index 339b8af..29a1623 100644
---- a/src/base/tools/aapt2/compile/IdAssigner.cpp
-+++ b/src/base/tools/aapt2/compile/IdAssigner.cpp
-@@ -269,10 +269,10 @@ Result<ResourceId> TypeGroup::NextId() {
- bool IdAssignerContext::ReserveId(const ResourceName& name, ResourceId id,
-                                   const Visibility& visibility, IDiagnostics* diag) {
-   if (package_id_ != id.package_id()) {
--    diag->Error(DiagMessage() << "can't assign ID " << id << " to resource " << name
-+    std::stringstream error;
-+    error << "can't assign ID " << id << " to resource " << name
-                               << " because package already has ID " << std::hex
--                              << (int)id.package_id());
--    return false;
-+                              << (int)id.package_id() << ". base : " << (int)package_id_ << ". But Ignored.";
-   }
-
-   auto key = ResourceTypeKey{name.type, id.type_id()};
 diff --git a/src/base/tools/aapt2/util/Util.cpp b/src/base/tools/aapt2/util/Util.cpp
 index d7a8e6fe6ada..74457add2e6b 100644
 --- a/src/base/tools/aapt2/util/Util.cpp
