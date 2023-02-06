@@ -1,4 +1,23 @@
 Submodule src/base contains modified content
+diff --git a/TableMerger.cpp b/TableMerger2.cpp
+index 22f4d18dc3ca..150ddd887e23 100644
+--- a/TableMerger.cpp
++++ b/TableMerger2.cpp
+@@ -110,13 +110,6 @@ static bool MergeEntry(IAaptContext* context, const Source& src,
+       dst_entry->id = src_entry->id;
+     }
+     dst_entry->visibility = std::move(src_entry->visibility);
+-  } else if (src_entry->visibility.level == Visibility::Level::kPublic &&
+-             dst_entry->visibility.level == Visibility::Level::kPublic && dst_entry->id &&
+-             src_entry->id && src_entry->id != dst_entry->id) {
+-    // Both entries are public and have different IDs.
+-    context->GetDiagnostics()->Error(DiagMessage(src) << "cannot merge entry '" << src_entry->name
+-                                                      << "': conflicting public IDs");
+-    return false;
+   }
+ 
+   // Copy over the rest of the properties, if needed.
+
 diff --git a/src/base/tools/aapt2/compile/IdAssigner.cpp b/src/base/tools/aapt2/compile/IdAssigner.cpp
 index 339b8af5d536..6bd7ae6a19e3 100644
 --- a/src/base/tools/aapt2/compile/IdAssigner.cpp
